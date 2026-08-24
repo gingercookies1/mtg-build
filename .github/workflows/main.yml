@@ -1,0 +1,38 @@
+name: build-mtg-mipsel
+on: [workflow_dispatch]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+      - uses: actions/checkout@v4
+        with:
+          repository: 9seconds/mtg
+          ref: v2.2.8
+      - name: Patch go.mod (Go 1.26 -> 1.25, fixes MIPS futex crash)
+        run: sed -i 's/^go 1\.26$/go 1.25/' go.mod
+      - name: Build for mipsel
+        env:
+          GOOS: linux
+          GOARCH: mipsle
+          GOMIPS: softfloat
+          CGO_ENABLED: "0"
+          GOTOOLCHAIN: local
+        run: go build -trimpath -ldflags "-s -w" -o mtg .
+      - name: Delete old release (for re-runs)
+        run: gh release delete mtg-mipsel --yes --cleanup-tag 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Create release with binary
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mtg-mipsel
+          name: mtg-mipsel (Go 1.25)
+          body: mtg v2.2.8 built with Go 1.25 (fix for Go 1.26 futex crash on MIPS)
+          files: mtg
