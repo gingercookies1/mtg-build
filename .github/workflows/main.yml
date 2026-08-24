@@ -16,7 +16,9 @@ jobs:
           repository: 9seconds/mtg
           ref: v2.2.8
       - name: Patch go.mod (Go 1.26 -> 1.25, fixes MIPS futex crash)
-        run: sed -i 's/^go 1\.26$/go 1.25/' go.mod
+        run: |
+          sed -i 's/^go 1\.26$/go 1.25/' go.mod
+          go mod tidy
       - name: Build for mipsel
         env:
           GOOS: linux
